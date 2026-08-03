@@ -2,3 +2,6 @@
 *.out
 /bin/
 .DS_Store
+
+# rapid が失敗時に残す再現用ファイル
+testdata/rapid/
