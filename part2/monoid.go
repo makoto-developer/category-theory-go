@@ -80,6 +80,20 @@ var (
 	}}
 )
 
+// CompareBy は比較関数のモノイド。単位元は「常に同順」を返す比較で、
+// Append は「先に差がついたほうを採る」。多段ソートの比較関数はこの形をしている。
+// 標準ライブラリの cmp.Or が値に対してやっていることと同じ構造。
+func CompareBy[T any](cmps ...func(a, b T) int) func(a, b T) int {
+	return func(a, b T) int {
+		for _, cmp := range cmps {
+			if r := cmp(a, b); r != 0 {
+				return r
+			}
+		}
+		return 0
+	}
+}
+
 // Mean は平均。結合的でないのでモノイドにならず、分割して並列に畳み込むと答えが変わる。
 func Mean(xs []float64) float64 {
 	if len(xs) == 0 {
