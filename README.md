@@ -23,10 +23,12 @@ Go 1.25 以降が必要（`iter.Seq` と range-over-func を使う）。外部�
 
 ## 記事
 
-- 第1回　合成できることが、すべての出発点だった —— 型と関数がつくる圏
-- 第2回　middleware も errors.Join も圏論だった —— Go標準ライブラリに潜む構造
-- 第3回　Goに高階カインドはない —— 型システムの天井を圏論で測る
-- 第4回　圏論でワークフローエンジンを組み直したら —— 得したところ、壊れたところ
+1. [合成できることが、すべての出発点だった —— 型と関数がつくる圏](https://blog.makoto-developer.net/articles/practical-category-theory-go-1)
+2. [middleware も errors.Join も圏論だった —— Go標準ライブラリに潜む構造](https://blog.makoto-developer.net/articles/practical-category-theory-go-2)
+3. [Goに高階カインドはない —— 型システムの天井を圏論で測る](https://blog.makoto-developer.net/articles/practical-category-theory-go-3)
+4. [圏論でワークフローエンジンを組み直したら —— 得したところ、壊れたところ](https://blog.makoto-developer.net/articles/practical-category-theory-go-4)
+
+実測した数字は [BENCHMARKS.md](BENCHMARKS.md) に測定条件つきでまとめてある。
 
 ## ライセンス
 
