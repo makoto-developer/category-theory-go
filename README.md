@@ -4,13 +4,15 @@
 
 ## ブラウザですぐ試す
 
-[![Open in CodeSandbox](https://img.shields.io/badge/CodeSandbox-open-000?logo=codesandbox)](https://codesandbox.io/p/github/makoto-developer/category-theory-go)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/makoto-developer/category-theory-go)
 
-→ https://codesandbox.io/p/github/makoto-developer/category-theory-go
+→ https://codespaces.new/makoto-developer/category-theory-go
 
-開くと `go test ./...` が自動で走ります。右のタスク一覧から、回ごとのテストや「法則が壊れる瞬間を見る」を押せます。ローカルに Go を入れなくても、圏の法則が本当に成り立つこと・壊れることを確かめられます。
+`.devcontainer/devcontainer.json` で `golang:1.25` を指定してあるので、開くだけで環境が整い、`go test ./...` が自動で1回走ります。あとはターミナルで下の「まず何を見るか」のコマンドを打つだけです。ローカルに Go を入れなくても、圏の法則が本当に成り立つこと・壊れることを確かめられます。
 
-**ベンチマークの数値だけは注意してください。** 共有VM上なので、記事に載せた数字（Apple M5 Pro / Go 1.25.1）とは一致しません。見るべきは絶対値ではなく比のほうです。正確な実測は手元でどうぞ。
+> CodeSandbox でも開けるようにしていましたが、**Repositories 機能は 2026年7月1日でサポート終了**になりました（CodeSandbox 自身が Codespaces への移行を案内しています）。そのため Codespaces に切り替えています。
+
+**ベンチマークの数値だけは注意してください。** クラウドの共有マシン上なので、記事に載せた数字（Apple M5 Pro / Go 1.25.1）とは一致しません。見るべきは絶対値ではなく比のほうです。正確な実測は手元でどうぞ。
 
 ## 手元で動かす
 

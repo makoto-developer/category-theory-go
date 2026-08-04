@@ -11,7 +11,7 @@ go test -v ./part4/
 go test -bench=. -benchmem -run='^$' ./part4/
 ```
 
-CodeSandbox なら **「第4回: ワークフローエンジン（素直な実装 vs 射の合成）」** のタスクです。
+[Codespaces](https://codespaces.new/makoto-developer/category-theory-go) でも同じコマンドがそのまま動きます。
 
 ## 何を確認すればいいか
 

@@ -1,9 +1,14 @@
 {
   "name": "Goで書く実践圏論",
   "image": "golang:1.25",
+  "postCreateCommand": "go mod download && go test ./...",
   "customizations": {
     "vscode": {
-      "extensions": ["golang.go"]
+      "extensions": ["golang.go"],
+      "settings": {
+        "go.testFlags": ["-v"],
+        "go.toolsManagement.checkForUpdates": "off"
+      }
     }
   }
 }

@@ -11,7 +11,7 @@ go test -v ./part1/                        # 法則の検証
 go test -bench=. -benchmem -run='^$' ./part1/   # 合成のコスト
 ```
 
-CodeSandbox なら、右のタスク一覧から **「第1回: 圏の公理（結合律・単位律）と純粋性」** を押すだけです。
+[Codespaces](https://codespaces.new/makoto-developer/category-theory-go) で開けば、そのままターミナルに貼るだけで動きます。
 
 ## 何を確認すればいいか
 
@@ -83,4 +83,4 @@ go test -v -run 'TestComposeEIsAssociative|TestComposeEShortCircuits' ./part1/
 
 ## 数値について
 
-ベンチマークの数値は実行環境で変わります。記事の数字は Apple M5 Pro / Go 1.25.1 のもので、CodeSandbox のような共有VMでは**絶対値は一致しません**。見るべきは絶対値ではなく、**「変数に保存」と「毎回組み直す」の比**のほうです。
+ベンチマークの数値は実行環境で変わります。記事の数字は Apple M5 Pro / Go 1.25.1 のもので、クラウドの共有マシンでは**絶対値は一致しません**。見るべきは絶対値ではなく、**「変数に保存」と「毎回組み直す」の比**のほうです。

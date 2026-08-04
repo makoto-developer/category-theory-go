@@ -11,7 +11,7 @@ go test -v ./part3/
 go test -bench=. -benchmem -run='^$' ./part3/
 ```
 
-CodeSandbox なら **「第3回: Applicative・F代数・CPS・高階カインドの回避策」** のタスクです。
+[Codespaces](https://codespaces.new/makoto-developer/category-theory-go) でも同じコマンドがそのまま動きます。
 
 ## 何を確認すればいいか
 

@@ -11,7 +11,7 @@ go test -v ./part2/
 go test -bench=. -benchmem -run='^$' ./part2/
 ```
 
-CodeSandbox なら **「第2回: Functor則・Monoid則・middleware の結合律」** のタスクを押してください。
+[Codespaces](https://codespaces.new/makoto-developer/category-theory-go) でも同じコマンドがそのまま動きます。
 
 ## 何を確認すればいいか
 
