@@ -1,0 +1,52 @@
+{
+  "$schema": "https://codesandbox.io/schemas/tasks.json",
+  "setupTasks": [
+    {
+      "name": "依存を取得（rapid のみ）",
+      "command": "go mod download"
+    }
+  ],
+  "tasks": {
+    "test-all": {
+      "name": "全部のテストを走らせる（圏の法則の検証）",
+      "command": "go test ./...",
+      "runAtStart": true
+    },
+    "test-part1": {
+      "name": "第1回: 圏の公理（結合律・単位律）と純粋性",
+      "command": "go test -v ./part1/"
+    },
+    "test-part2": {
+      "name": "第2回: Functor則・Monoid則・middleware の結合律",
+      "command": "go test -v ./part2/"
+    },
+    "test-part3": {
+      "name": "第3回: Applicative・F代数・CPS・高階カインドの回避策",
+      "command": "go test -v ./part3/"
+    },
+    "test-part4": {
+      "name": "第4回: ワークフローエンジン（素直な実装 vs 射の合成）",
+      "command": "go test -v ./part4/"
+    },
+    "bench-all": {
+      "name": "ベンチマーク（数値は共有VMなので記事とは一致しません）",
+      "command": "go test -bench=. -benchmem -run='^$' ./..."
+    },
+    "show-broken-laws": {
+      "name": "法則が壊れる瞬間を見る（平均・浮動小数点・メモ化）",
+      "command": "go test -v -run 'TestMeanBreaksUnderParallelSplit|TestFloatAdditionIsNotAssociative|TestMemoizeChangesResultForImpureMorphism' ./part1/ ./part2/"
+    },
+    "show-applicative-vs-monad": {
+      "name": "エラーが3件集まるか1件で止まるかを見る",
+      "command": "go test -v -run TestApplicativeCollectsAllErrors ./part3/"
+    },
+    "show-workflow-diagram": {
+      "name": "ワークフロー定義から Mermaid 図を生成する",
+      "command": "go test -v -run 'TestMermaidIsGeneratedFromTheSamePlan|TestExplainListsRetryPolicy' ./part4/"
+    },
+    "vet": {
+      "name": "go vet",
+      "command": "go vet ./..."
+    }
+  }
+}

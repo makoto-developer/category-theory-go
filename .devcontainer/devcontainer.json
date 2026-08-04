@@ -1,0 +1,9 @@
+{
+  "name": "Goで書く実践圏論",
+  "image": "golang:1.25",
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go"]
+    }
+  }
+}
