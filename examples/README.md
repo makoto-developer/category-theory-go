@@ -23,11 +23,13 @@
 
 | 項目 | 値 |
 |---|---|
-| Devbox の Go | `go1.21.13 linux/amd64` |
+| Devbox の Go | `1.25`（`.devcontainer/devcontainer.json` で `mcr.microsoft.com/devcontainers/go:1.25-bookworm` を指定） |
 | `go.mod` | 無し（`go run main.go` で直接動かす） |
 | 外部依存 | 不可 |
 
-**`part1/`〜`part4/` のコードはここに置けません。** `iter.Seq`・`b.Loop()`・`pgregory.net/rapid` を使っており、Go 1.21 では通らないからです。`examples/` に置くのは「Go 1.18 の範囲・標準ライブラリのみ・1ファイル」に収まるものだけにしてください。全部を触りたい人には [Codespaces](https://codespaces.new/makoto-developer/category-theory-go) を案内します。
+**`part1/`〜`part4/` のコードはそのままは置けません。** `pgregory.net/rapid` に依存していて `go.mod` が要るからです。`examples/` に置くのは「標準ライブラリのみ・1ファイル」に収まるものだけにしてください。全部を触りたい人には [Codespaces](https://codespaces.new/makoto-developer/category-theory-go) を案内します。
+
+> 当初の Devbox は Go 1.21 で、`iter.Seq` も `b.Loop()` も使えませんでした。加えて **gopls が入らず、埋め込みで `.go` ファイルを開くと「Failed to setup Go LSP」のエラーが出ていました**。イメージを 1.25 に上げて両方とも解消しています。
 
 ## 一覧
 
