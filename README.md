@@ -4,13 +4,23 @@
 
 ## ブラウザですぐ試す
 
+入口は2つあります。**ログインせずに結果だけ見たいなら前者、全部を触りたいなら後者**です。
+
+### 1. サンドボックス（ログイン不要・1ファイル）
+
+→ https://codesandbox.io/p/devbox/4msfly
+
+圏の法則が成り立つこと・壊れることを、外部依存ゼロの1ファイルに縮めたものです。中身は [`examples/laws/main.go`](examples/laws/main.go)。第1回の記事にも埋め込んであります。
+
+### 2. GitHub Codespaces（全4パート）
+
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/makoto-developer/category-theory-go)
 
 → https://codespaces.new/makoto-developer/category-theory-go
 
-`.devcontainer/devcontainer.json` で `golang:1.25` を指定してあるので、開くだけで環境が整い、`go test ./...` が自動で1回走ります。あとはターミナルで下の「まず何を見るか」のコマンドを打つだけです。ローカルに Go を入れなくても、圏の法則が本当に成り立つこと・壊れることを確かめられます。
+`.devcontainer/devcontainer.json` で `golang:1.25` を指定してあるので、開くだけで環境が整い、`go test ./...` が自動で1回走ります。あとはターミナルで下の「まず何を見るか」のコマンドを打つだけです。
 
-> CodeSandbox でも開けるようにしていましたが、**Repositories 機能は 2026年7月1日でサポート終了**になりました（CodeSandbox 自身が Codespaces への移行を案内しています）。そのため Codespaces に切り替えています。
+> CodeSandbox の **Repositories 機能は 2026年7月1日でサポート終了**になったため、リポジトリ全体をそのまま開くことはできません。サンドボックス（Devbox）は使えるので、上のように1ファイルのスニペットとして置いています。
 
 **ベンチマークの数値だけは注意してください。** クラウドの共有マシン上なので、記事に載せた数字（Apple M5 Pro / Go 1.25.1）とは一致しません。見るべきは絶対値ではなく比のほうです。正確な実測は手元でどうぞ。
 
