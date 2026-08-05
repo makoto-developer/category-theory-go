@@ -29,19 +29,18 @@ func itoa(n int) string   { return strconv.Itoa(n) }
 func length(s string) int { return len(s) }
 func isEven(n int) bool   { return n%2 == 0 }
 
+// 案内は先頭に出す。記事に埋め込むと末尾しか見えないので、末尾は検証結果のために空けておく。
 func main() {
+	fmt.Println("連載「Goで書く実践圏論」第1回")
+	fmt.Println("  記事: https://blog.makoto-developer.net/articles/2026-08-04-practical-category-theory-go-1")
+	fmt.Println("  全4回のコード（テスト・ベンチ込み）: https://github.com/makoto-developer/category-theory-go")
+	fmt.Println("──────────────────────────────────────────")
+
 	checkAssociativity()
 	checkIdentity()
 	showMemoizeBreaks()
 	showMeanBreaks()
 	showFloatBreaks()
-
-	fmt.Println()
-	fmt.Println("──────────────────────────────────────────")
-	fmt.Println("続きは記事で:")
-	fmt.Println("  https://blog.makoto-developer.net/articles/2026-08-04-practical-category-theory-go-1")
-	fmt.Println("全4回のコード（テスト・ベンチ込み）:")
-	fmt.Println("  https://github.com/makoto-developer/category-theory-go")
 }
 
 // 結合律: (h∘g)∘f と h∘(g∘f) は、どんな入力でも等しい。
