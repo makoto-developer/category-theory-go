@@ -184,7 +184,7 @@ func ToCont[A any](seq iter.Seq[A]) Cont[A] {
 	}
 }
 
-// 継続に恒等射を渡すと、値がそのまま出てくる。これが米田の補題のいちばん噛み砕いた姿。
+// 継続に恒等射を渡すと値が出てくる。逆向きは戻らないので米田の補題の同型ではない（記事 3.2）。
 func Collect[A any](c Cont[A]) []A {
 	var out []A
 	c(func(a A) { out = append(out, a) })

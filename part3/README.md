@@ -69,7 +69,9 @@ go test -bench=TwoFoldsVsProduct -benchmem -run='^$' ./part3/
 go test -v -run 'TestContRoundTrip|TestContFunctorLaws|TestSeqStopsOnBreak' ./part3/
 ```
 
-`FromCont` の実装を見てください。**継続に恒等射を渡すと値が出てきます**。これが米田の補題のいちばん噛み砕いた姿です。
+`FromCont` の実装を見てください。**継続に恒等射を渡すと値が出てきます**。
+
+ただし逆向きは戻りません。`func(k func(int) int) int { return 42 }` のように継続を捨てる関数も `Cont[int, int]` なので、**`Cont[A, A]` と `A` は同型ではありません**。米田の補題が要求しているのは「任意の行き先 $R$ で自然に振る舞う」ことで、`Cont[A, A]` と書いた時点で $R$ が固定され、その条件が落ちています。Go の型ではこの自然性を書けません。詳しくは記事の第3回 3.2 を参照してください。
 
 ### 5. `iter.Pull` は120倍遅い（今回いちばん実用的な数字）
 
