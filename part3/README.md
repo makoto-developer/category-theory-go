@@ -73,7 +73,7 @@ go test -v -run 'TestContRoundTrip|TestContFunctorLaws|TestSeqStopsOnBreak' ./pa
 
 ただし逆向きは戻りません。`func(k func(int) int) int { return 42 }` のように継続を捨てる関数も `Cont[int, int]` なので、**`Cont[A, A]` と `A` は同型ではありません**。米田の補題が要求しているのは「任意の行き先 $R$ で自然に振る舞う」ことで、`Cont[A, A]` と書いた時点で $R$ が固定され、その条件が落ちています。Go の型ではこの自然性を書けません。詳しくは記事の第3回 3.2 を参照してください。
 
-### 5. `iter.Pull` は120倍遅い（今回いちばん実用的な数字）
+### 5. `iter.Pull` はスライス直走査の120倍遅い（今回いちばん実用的な数字）
 
 ```bash
 go test -bench=SeqStyles -benchmem -run='^$' ./part3/
@@ -85,7 +85,7 @@ go test -bench=SeqStyles -benchmem -run='^$' ./part3/
 
 要素あたりでスライス 0.27 ns、push 1.28 ns、pull **33 ns**。`iter.Pull` は内部でコルーチンを作り、1要素ごとに制御を往復させるためです。**pull でなければ書けない処理（マージ・先読み）にだけ使ってください。**
 
-理論上 push と pull は相互変換できます。それでも100倍以上違う。**同型であることと、同じコストであることは別**です。
+理論上 push と pull は相互変換できます。それでも **push 比で 26倍、スライス直走査と比べれば 120倍**違う。**同型であることと、同じコストであることは別**です。
 
 ### 6. 高階カインドが無いことの値段
 
