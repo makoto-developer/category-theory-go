@@ -202,5 +202,5 @@ func showSeqIsContinuationPassing() {
 
 	fmt.Printf("\n[iter.Seq] 継続に恒等射を渡すと値が出てくる: %v\n", Collect(ToCont(iter.Seq[int](seq))))
 	fmt.Println("           range-over-func は最初から継続渡し表現だった。ToCont は素通しになる")
-	fmt.Println("           手元のベンチでは iter.Pull がこれの120倍遅い。同型であることと同じ値段は別")
+	fmt.Println("           手元のベンチでは iter.Pull がこれの26倍、スライス直走査の120倍遅い。同型と同じ値段は別")
 }
