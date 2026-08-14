@@ -41,9 +41,10 @@ Go 1.25 以降が必要です（`iter.Seq` と range-over-func を使うため�
 | ディレクトリ | 記事 | 内容 |
 |---|---|---|
 | [`part1/`](part1/) | 第1回 | 合成 `Compose`、圏の公理（結合律・単位律）の検証、法則が壊れる例、抽象化コストの実測 |
-| [`part2/`](part2/) | 第2回 | Functor / Monoid / Kleisli 合成 / middleware（自然変換）/ 積と余積 |
+| [`part2/`](part2/) | 第2回 | Functor / Monoid / Kleisli 合成 / middleware（`http.Handler` 上の自己射）/ 積と余積 |
 | [`part3/`](part3/) | 第3回 | Applicative バリデーション、F代数と fold、`iter.Seq` と CPS、高階カインドの回避策3種 |
 | [`part4/`](part4/) | 第4回 | ワークフローエンジン（素直な実装 vs 圏論的実装）、interpreter による実行・dry-run・図生成 |
+| [`part5/`](part5/) | 発展 | Cayley 表現。同じ変換が cons リストで 1,711倍速く、snoc リストで 4,767倍遅くなる |
 
 ## まず何を見るか
 
