@@ -1,6 +1,7 @@
 // Package part2 は連載「Goで書く実践圏論」第2回の検証コード。
 // Go の標準ライブラリと日常のコードに現れる Functor・Monoid・Kleisli 合成・
-// 自然変換を取り出し、それぞれの法則が成り立つことを確かめる。
+// middleware（http.Handler 上の自己射）・積と余積を取り出し、
+// それぞれの法則が成り立つことを確かめる。
 package part2
 
 import "iter"
