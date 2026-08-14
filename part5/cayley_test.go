@@ -12,14 +12,14 @@ func drawPieces(t *rapid.T) []string {
 	return rapid.SliceOfN(rapid.StringMatching(`[a-z]{1,4}`), 0, 12).Draw(t, "pieces")
 }
 
-// checkMonoid は結合律と単位律を確かめる。3つのモノイドは全部これを通る。
-// 通ってしまうからこそ、圏論の側からは3つを区別できない。
-func checkMonoid[M any](t *rapid.T, mo Monoid[M], lift func(string) M, eq func(M, M) bool) {
-	xs := drawPieces(t)
-	if len(xs) < 3 {
-		return
-	}
-	a, b, c := lift(xs[0]), lift(xs[1]), lift(xs[2])
+// checkMonoid は結合律と単位律を、生成された例について検査する。証明ではない。
+// build は任意長の値を作る（1要素だけで検査すると、長さが関わる破れを見逃す）。
+// 3つのモノイドは全部これを通る。通ってしまうからこそ、要素と演算結果しか見ない
+// この抽象からは3つを区別できない。
+func checkMonoid[M any](t *rapid.T, mo Monoid[M], build func([]string) M, eq func(M, M) bool) {
+	a := build(drawPieces(t))
+	b := build(drawPieces(t))
+	c := build(drawPieces(t))
 
 	left := mo.Append(mo.Append(a, b), c)
 	right := mo.Append(a, mo.Append(b, c))
@@ -31,23 +31,40 @@ func checkMonoid[M any](t *rapid.T, mo Monoid[M], lift func(string) M, eq func(M
 	}
 }
 
+// buildCons / buildSnoc は断片の列から任意長の値を組み立てる。
+func buildCons(xs []string) *List {
+	cells := make([]*List, len(xs))
+	for i, x := range xs {
+		cells[i] = SingleCons(x)
+	}
+	return FoldNaive(ConsMonoid, cells)
+}
+
+func buildSnoc(xs []string) *RList {
+	cells := make([]*RList, len(xs))
+	for i, x := range xs {
+		cells[i] = SingleSnoc(x)
+	}
+	return FoldNaive(SnocMonoid, cells)
+}
+
 func TestStringMonoidLaws(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		checkMonoid(t, StringMonoid, func(s string) string { return s },
+		checkMonoid(t, StringMonoid, func(xs []string) string { return strings.Join(xs, "") },
 			func(a, b string) bool { return a == b })
 	})
 }
 
 func TestConsMonoidLaws(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		checkMonoid(t, ConsMonoid, SingleCons,
+		checkMonoid(t, ConsMonoid, buildCons,
 			func(a, b *List) bool { return slices.Equal(a.Slice(), b.Slice()) })
 	})
 }
 
 func TestSnocMonoidLaws(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		checkMonoid(t, SnocMonoid, SingleSnoc,
+		checkMonoid(t, SnocMonoid, buildSnoc,
 			func(a, b *RList) bool { return slices.Equal(a.Slice(), b.Slice()) })
 	})
 }
