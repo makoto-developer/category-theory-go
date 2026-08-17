@@ -14,8 +14,8 @@ func drawPieces(t *rapid.T) []string {
 
 // checkMonoid は結合律と単位律を、生成された例について検査する。証明ではない。
 // build は任意長の値を作る（1要素だけで検査すると、長さが関わる破れを見逃す）。
-// 3つのモノイドは全部これを通る。通ってしまうからこそ、要素と演算結果しか見ない
-// この抽象からは3つを区別できない。
+// 3つのモノイドは全部これを通る。ただし「同じ法則を通る」だけでは同型は言えない
+// （それを見るのは TestConsAndSnocAreIsomorphic のほう）。
 func checkMonoid[M any](t *rapid.T, mo Monoid[M], build func([]string) M, eq func(M, M) bool) {
 	a := build(drawPieces(t))
 	b := build(drawPieces(t))
@@ -69,23 +69,54 @@ func TestSnocMonoidLaws(t *testing.T) {
 	})
 }
 
-// Cayley 埋め込みはモノイド準同型。lift(a·b) と lift(a)∘lift(b) が一致する。
-// これが成り立つから「畳み方を変えても意味は変わらない」と言える。
+// Cayley 埋め込みはモノイド準同型。L(a·b) と L(a)∘L(b) が一致する。
+// 一般の証明は結合律から2行で出る（記事の 1 章）。ここで検査するのはその具体例。
+func checkCayleyHomomorphism[M any](t *rapid.T, mo Monoid[M], build func([]string) M, eq func(M, M) bool) {
+	a, b := build(drawPieces(t)), build(drawPieces(t))
+	rest := build(drawPieces(t))
+
+	combined := Cayley(mo, mo.Append(a, b))(rest)
+	composed := Cayley(mo, a)(Cayley(mo, b)(rest))
+	if !eq(combined, composed) {
+		t.Fatalf("準同型でない")
+	}
+	if !eq(Cayley(mo, mo.Empty)(rest), rest) {
+		t.Fatalf("単位元が恒等写像に移っていない")
+	}
+}
+
 func TestCayleyIsMonoidHomomorphism(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		xs := drawPieces(t)
-		if len(xs) < 3 {
-			return
-		}
-		a, b, rest := xs[0], xs[1], xs[2]
+		checkCayleyHomomorphism(t, StringMonoid, func(xs []string) string { return strings.Join(xs, "") },
+			func(a, b string) bool { return a == b })
+		checkCayleyHomomorphism(t, ConsMonoid, buildCons,
+			func(a, b *List) bool { return slices.Equal(a.Slice(), b.Slice()) })
+		checkCayleyHomomorphism(t, SnocMonoid, buildSnoc,
+			func(a, b *RList) bool { return slices.Equal(a.Slice(), b.Slice()) })
+	})
+}
 
-		combined := Cayley(StringMonoid, StringMonoid.Append(a, b))(rest)
-		composed := Cayley(StringMonoid, a)(Cayley(StringMonoid, b)(rest))
-		if combined != composed {
-			t.Fatalf("準同型でない: %q != %q", combined, composed)
+// cons と snoc は、要素列の対応でモノイド同型になる。
+// 「どちらも同じ法則を通る」だけでは同型は言えないので、対応そのものを検査する。
+// 同型は演算と単位元を保つが、実行コストは保たない —— それがこのパートの主題。
+func TestConsAndSnocAreIsomorphic(t *testing.T) {
+	toSnoc := func(l *List) *RList { return buildSnoc(l.Slice()) }
+	toCons := func(r *RList) *List { return buildCons(r.Slice()) }
+
+	rapid.Check(t, func(t *rapid.T) {
+		a, b := buildCons(drawPieces(t)), buildCons(drawPieces(t))
+
+		if !slices.Equal(
+			toSnoc(ConsMonoid.Append(a, b)).Slice(),
+			SnocMonoid.Append(toSnoc(a), toSnoc(b)).Slice(),
+		) {
+			t.Fatalf("演算を保存していない")
 		}
-		if got := Cayley(StringMonoid, StringMonoid.Empty)(rest); got != rest {
-			t.Fatalf("単位元が恒等射に移っていない: %q", got)
+		if toSnoc(ConsMonoid.Empty) != SnocMonoid.Empty {
+			t.Fatalf("単位元を保存していない")
+		}
+		if !slices.Equal(toCons(toSnoc(a)).Slice(), a.Slice()) {
+			t.Fatalf("往復して戻らない")
 		}
 	})
 }
