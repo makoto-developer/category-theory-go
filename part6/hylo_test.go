@@ -105,9 +105,10 @@ func TestPaginateCollectsAllPages(t *testing.T) {
 	}
 }
 
-// 余代数は種だけを見る純粋な関数である。同じ種で2回呼べば同じ結果になる。
-// 状態をクロージャに隠すと、Unfold を2回走らせたときに壊れる。
-func TestPaginateCoalgebraIsPure(t *testing.T) {
+// 進行状態が種に入っているので、同じ種から何度でも展開し直せる。
+// 状態をクロージャに隠すと、Unfold を2回走らせたときに2回目が空になる。
+// （これは「余代数が純粋である」ことの検査ではない。この例で再開できることの検査。）
+func TestPaginateCanRestartFromSameSeed(t *testing.T) {
 	pages := map[string]Page{
 		"":   {Items: []string{"a"}, NextCursor: "c1"},
 		"c1": {Items: []string{"b"}, NextCursor: ""},
@@ -117,7 +118,12 @@ func TestPaginateCoalgebraIsPure(t *testing.T) {
 	first := Unfold(co, Cursor{})
 	second := Unfold(co, Cursor{})
 	if len(first) != 2 || len(second) != 2 {
-		t.Fatalf("同じ種で2回展開したのに結果が違う: %d, %d ページ", len(first), len(second))
+		t.Fatalf("同じ種で2回展開したのにページ数が違う: %d, %d", len(first), len(second))
+	}
+	for i := range first {
+		if !slices.Equal(first[i].Items, second[i].Items) || first[i].NextCursor != second[i].NextCursor {
+			t.Fatalf("%d ページ目の中身が違う: %+v vs %+v", i, first[i], second[i])
+		}
 	}
 }
 

@@ -10,11 +10,14 @@ package part6
 
 import "iter"
 
-// Coalgebra は種 S から「次の一歩」を作る。1要素と次の種を返し、
-// 続きがなければ false を返す。Algebra が T を組み立てるのに対して、こちらは S を展開する。
+// Coalgebra は、A を固定したリスト関手 F(X) = 1 + A×X の余代数 S → F(S) を Go で表したもの。
+// bool が直和のタグで、false が 1（終わり）、true が A×S（1要素と次の種）にあたる。
+// Go に直和型が無いので、false のときも A と S を返せてしまう点は忠実でない。
+// Algebra が T を組み立てるのに対して、こちらは S を展開する。
 type Coalgebra[S, A any] func(S) (A, S, bool)
 
-// Unfold は種から列を生やす。fold の双対で、再帰はこの関数の1か所にしかない。
+// Unfold は種から有限の列を生やす。停止しない余代数を渡すと戻らない
+// （無限に生やしたいときは UnfoldSeq のほう）。
 func Unfold[S, A any](co Coalgebra[S, A], seed S) []A {
 	var out []A
 	for {
@@ -59,7 +62,9 @@ type Page struct {
 }
 
 // Cursor はページングの種。「次があるか」を種そのものが持つ。
-// 余代数は種だけを見る純粋な関数でなければならないので、状態をクロージャに隠さない。
+// 進行状態をクロージャに隠さず種に入れておくと、同じ種から何度でも展開し直せる。
+// （Go の型は純粋性を保証しないし、fetch 自身は通信するので純粋ではない。
+// ここで揃えているのは「種が同じなら同じところから再開できる」ことまで。）
 type Cursor struct {
 	Value string
 	Done  bool

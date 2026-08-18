@@ -3,6 +3,10 @@ package part6
 // hylomorphism は unfold してから fold すること。間に立つ構造は、
 // 作られてすぐ畳まれるので、理屈のうえでは要らない（deforestation）。
 // 要らないものが Go で本当に消えるのかを、ここで測る。
+//
+// ここの Hylo* は一般の関手に対する hylomorphism ではなく、リスト関手の
+// anamorphism と左畳み込み（step は func(B, A) B なので foldl 型）を繋いだ限定版。
+// 下のマージソートは別の関手（F(X) = 葉 + X×X）で、SplitAna / MergeCata を直接書いている。
 
 // HyloVia は素直に書いた版。中間のスライスを実際に作ってから畳む。
 func HyloVia[S, A, B any](co Coalgebra[S, A], step func(B, A) B, zero B, seed S) B {
@@ -54,7 +58,11 @@ func SplitAna(xs []int) *SplitTree {
 }
 
 // MergeCata は木を畳む（catamorphism）。葉はそのまま、節はマージ。
+// SplitAna が作った木だけを受け取る前提（nil や片側だけの節は想定しない）。
 func MergeCata(t *SplitTree) []int {
+	if t == nil {
+		return nil
+	}
 	if t.L == nil {
 		return t.Leaf
 	}
@@ -85,5 +93,7 @@ func merge(a, b []int) []int {
 			b = b[1:]
 		}
 	}
-	return append(append(out, a...), b...)
+	out = append(out, a...)
+	out = append(out, b...)
+	return out
 }

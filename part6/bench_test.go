@@ -17,20 +17,30 @@ var (
 func BenchmarkHylomorphism(b *testing.B) {
 	for _, n := range []int{1000, 100000} {
 		add := func(acc, x int) int { return acc + x }
+		// 余代数はループの外で作る。中で作ると、要素ごとの費用に
+		// クロージャ生成という定数コストが混ざる。
+		co := CountTo(n)
 
 		b.Run(fmt.Sprintf("n=%06d/1_via_slice", n), func(b *testing.B) {
 			for b.Loop() {
-				sinkInt = HyloVia(CountTo(n), add, 0, 1)
+				sinkInt = HyloVia(co, add, 0, 1)
 			}
 		})
 		b.Run(fmt.Sprintf("n=%06d/2_fused", n), func(b *testing.B) {
 			for b.Loop() {
-				sinkInt = HyloFused(CountTo(n), add, 0, 1)
+				sinkInt = HyloFused(co, add, 0, 1)
 			}
 		})
 		b.Run(fmt.Sprintf("n=%06d/3_seq", n), func(b *testing.B) {
 			for b.Loop() {
-				sinkInt = HyloSeq(CountTo(n), add, 0, 1)
+				sinkInt = HyloSeq(co, add, 0, 1)
+			}
+		})
+		// 余代数を呼び出し位置で組み立てた場合。変数に入れた上と何が違うかを見る
+		// （コンパイラが中身を見通せるかどうかが変わる）。
+		b.Run(fmt.Sprintf("n=%06d/5_fused_literal_coalgebra", n), func(b *testing.B) {
+			for b.Loop() {
+				sinkInt = HyloFused(CountTo(n), add, 0, 1)
 			}
 		})
 		// 余代数も代数も使わず、手で書いたループ。抽象化の代金の基準線。
@@ -48,6 +58,11 @@ func BenchmarkHylomorphism(b *testing.B) {
 
 // マージソート。分割の木を実際に作る版と、作らない版。
 // 「普通に書いたマージソート」は後者にあたる。
+//
+// MergeSortHylo と MergeSortFused は入力を破壊しない（merge が新しい出力を確保し、
+// 入力側はスライスヘッダを進めるだけ）。よって両者には毎回のコピーが要らない。
+// slices.Sort だけが破壊的なので、そちらにはコピーが要る。
+// この非対称を隠さないよう、コピーを含めない比較と、含めた比較を分けて測る。
 func BenchmarkMergeSort(b *testing.B) {
 	for _, n := range []int{1000, 100000} {
 		src := make([]int, n)
@@ -56,24 +71,22 @@ func BenchmarkMergeSort(b *testing.B) {
 			src[i] = r.IntN(1 << 20)
 		}
 
+		// 木を作る／作らないの差だけを見る。どちらも非破壊なのでコピー不要。
 		b.Run(fmt.Sprintf("n=%06d/1_hylo_with_tree", n), func(b *testing.B) {
-			buf := make([]int, n)
 			for b.Loop() {
-				copy(buf, src)
-				sinkSlice = MergeSortHylo(buf)
+				sinkSlice = MergeSortHylo(src)
 			}
 		})
 		b.Run(fmt.Sprintf("n=%06d/2_fused", n), func(b *testing.B) {
-			buf := make([]int, n)
 			for b.Loop() {
-				copy(buf, src)
-				sinkSlice = MergeSortFused(buf)
+				sinkSlice = MergeSortFused(src)
 			}
 		})
-		b.Run(fmt.Sprintf("n=%06d/3_slices_sort", n), func(b *testing.B) {
-			buf := make([]int, n)
+		// 実務の比較。元の入力を残したままソートする、という同じ条件に揃える。
+		// 確保も計測区間に入れる（slices.Sort の 0 B/op はコピー用バッファを含まないため）。
+		b.Run(fmt.Sprintf("n=%06d/3_slices_sort_with_clone", n), func(b *testing.B) {
 			for b.Loop() {
-				copy(buf, src)
+				buf := slices.Clone(src)
 				slices.Sort(buf)
 				sinkSlice = buf
 			}
