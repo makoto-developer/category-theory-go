@@ -45,6 +45,7 @@ Go 1.25 以降が必要です（`iter.Seq` と range-over-func を使うため�
 | [`part3/`](part3/) | 第3回 | Applicative バリデーション、F代数と fold、`iter.Seq` と CPS、高階カインドの回避策3種 |
 | [`part4/`](part4/) | 第4回 | ワークフローエンジン（素直な実装 vs 圏論的実装）、interpreter による実行・dry-run・図生成 |
 | [`part5/`](part5/) | 発展 | Cayley 表現。同じ変換が cons リストで 1,711倍速く、snoc リストで 4,767倍遅くなる |
+| [`part6/`](part6/) | 発展 | F余代数と unfold。hylomorphism の中間構造は自動では消えない。融合後に残る代金は Go 1.26 と書き方の組み合わせで消える |
 
 ## まず何を見るか
 
