@@ -73,7 +73,7 @@ func MergeCata(t *SplitTree) []int {
 func MergeSortHylo(xs []int) []int { return MergeCata(SplitAna(xs)) }
 
 // MergeSortFused は木を作らない。普通に書くマージソートは、
-// hylomorphism を手で融合したものだった、というのがこの節の眼目。
+// hylomorphism を手で融合したものにあたる。
 func MergeSortFused(xs []int) []int {
 	if len(xs) <= 1 {
 		return xs
