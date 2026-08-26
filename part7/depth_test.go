@@ -1,79 +1,110 @@
 package part7
 
-import (
-	"fmt"
-	"testing"
+import "testing"
+
+// 深さを固定した値の入れ子。ポインタを使わないので、段ごとの複製だけが観測される。
+// 以前はポインタと値を行き来するアダプタを噛ませていて、そのアダプタ自身の
+// ヒープ確保（32B）が段ごとの差分に混ざっていた。足場を測ってしまっていた。
+
+type L1 struct{ Payload []string }
+type L2 struct {
+	Payload []string
+	Inner   L1
+}
+type L3 struct {
+	Payload []string
+	Inner   L2
+}
+type L4 struct {
+	Payload []string
+	Inner   L3
+}
+
+// 各段のレンズは、通るときに自分の Payload を複製する。
+// これが「各段が自分で身を守る」の形。
+
+func l4to3() Lens[L4, L3] {
+	return Lens[L4, L3]{
+		Get: func(x L4) L3 { return x.Inner },
+		Set: func(x L4, in L3) L4 { x.Payload = cloneSlice(x.Payload); x.Inner = in; return x },
+	}
+}
+
+func l3to2() Lens[L3, L2] {
+	return Lens[L3, L2]{
+		Get: func(x L3) L2 { return x.Inner },
+		Set: func(x L3, in L2) L3 { x.Payload = cloneSlice(x.Payload); x.Inner = in; return x },
+	}
+}
+
+func l2to1() Lens[L2, L1] {
+	return Lens[L2, L1]{
+		Get: func(x L2) L1 { return x.Inner },
+		Set: func(x L2, in L1) L2 { x.Payload = cloneSlice(x.Payload); x.Inner = in; return x },
+	}
+}
+
+func l1payload() Lens[L1, []string] {
+	return Lens[L1, []string]{
+		Get: func(x L1) []string { return cloneSlice(x.Payload) },
+		Set: func(x L1, ts []string) L1 { x.Payload = cloneSlice(ts); return x },
+	}
+}
+
+func makePayload(size int) []string {
+	p := make([]string, size)
+	for i := range p {
+		p[i] = "x"
+	}
+	return p
+}
+
+var (
+	sink1 L1
+	sink2 L2
+	sink3 L3
+	sink4 L4
 )
 
-// 入れ子の深さを変えられる型。各段が同じスライスを抱える。
-type Nest struct {
-	Payload []string
-	Inner   *Nest
-}
-
-// nestL は1段ぶんのレンズ。法則を守るために、格納するスライスを複製する。
-func nestL() Lens[Nest, *Nest] {
-	return Lens[Nest, *Nest]{
-		Get: func(n Nest) *Nest { return n.Inner },
-		Set: func(n Nest, in *Nest) Nest {
-			n.Payload = cloneSlice(n.Payload) // 自分の参照型を、通るたびに複製する
-			n.Inner = in
-			return n
-		},
-	}
-}
-
-func payloadL() Lens[*Nest, []string] {
-	return Lens[*Nest, []string]{
-		Get: func(n *Nest) []string { return cloneSlice(n.Payload) },
-		Set: func(n *Nest, ts []string) *Nest {
-			c := *n
-			c.Payload = cloneSlice(ts)
-			return &c
-		},
-	}
-}
-
-func makeNest(depth, size int) Nest {
-	payload := make([]string, size)
-	for i := range payload {
-		payload[i] = "x"
-	}
-	root := Nest{Payload: payload}
-	cur := &root
-	for range depth {
-		cur.Inner = &Nest{Payload: payload}
-		cur = cur.Inner
-	}
-	return root
-}
-
-// depth 段のレンズを合成して、いちばん奥の Payload に焦点を合わせる。
-func deepLens(depth int) Lens[Nest, []string] {
-	l := Compose(nestL(), payloadL())
-	for range depth - 1 {
-		l = Compose(nestL(), Compose(Lens[*Nest, Nest]{
-			Get: func(n *Nest) Nest { return *n },
-			Set: func(_ *Nest, n Nest) *Nest { return &n },
-		}, l))
-	}
-	return l
-}
-
-var sinkNest Nest
-
-// 合成の深さを増やすと、法則を守るための複製が何倍に重なるかを測る。
+// 合成の深さを増やすと、複製が何回重なるかを測る。
+// 深さ n の合成では、通る Set が n+1 個あるので複製は n+1 回になる。
 func BenchmarkLensDepth(b *testing.B) {
 	const size = 4096
 	next := make([]string, size)
-	for _, depth := range []int{1, 2, 3, 4} {
-		n := makeNest(depth, size)
-		l := deepLens(depth)
-		b.Run(fmt.Sprintf("depth=%d", depth), func(b *testing.B) {
-			b.ReportAllocs()
-			for b.Loop() {
-				sinkNest = l.Set(n, next)
-			}
-		})
-	}
+	p := makePayload(size)
+
+	x1 := L1{Payload: p}
+	x2 := L2{Payload: p, Inner: x1}
+	x3 := L3{Payload: p, Inner: x2}
+	x4 := L4{Payload: p, Inner: x3}
+
+	// 合成なし。Set は1つだけ通る。
+	b.Run("depth=0/set=1", func(b *testing.B) {
+		l := l1payload()
+		b.ReportAllocs()
+		for b.Loop() {
+			sink1 = l.Set(x1, next)
+		}
+	})
+	b.Run("depth=1/set=2", func(b *testing.B) {
+		l := Compose(l2to1(), l1payload())
+		b.ReportAllocs()
+		for b.Loop() {
+			sink2 = l.Set(x2, next)
+		}
+	})
+	b.Run("depth=2/set=3", func(b *testing.B) {
+		l := Compose(l3to2(), Compose(l2to1(), l1payload()))
+		b.ReportAllocs()
+		for b.Loop() {
+			sink3 = l.Set(x3, next)
+		}
+	})
+	b.Run("depth=3/set=4", func(b *testing.B) {
+		l := Compose(l4to3(), Compose(l3to2(), Compose(l2to1(), l1payload())))
+		b.ReportAllocs()
+		for b.Loop() {
+			sink4 = l.Set(x4, next)
+		}
+	})
 }

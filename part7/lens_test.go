@@ -43,7 +43,8 @@ func eqProfile(a, b Profile) bool {
 		return false
 	}
 	for k, v := range a.Meta {
-		if b.Meta[k] != v {
+		// 存在しないキーはゼロ値を返すので、ok を見ないと {"x":""} と {"y":""} を同一視する。
+		if bv, ok := b.Meta[k]; !ok || bv != v {
 			return false
 		}
 	}
