@@ -53,7 +53,14 @@ func counitHolds(l Lens[Doc, string], d Doc) bool {
 }
 
 // coassociativity 則: fmap coalg ∘ coalg = duplicate ∘ coalg。
-// Store は関数を含むので直接比較できない。位置 a を振って値で確かめる。
+//
+// **これは反例を見つける道具であって、判定器ではない。** Store は関数を含むので
+// 直接比較できず、有限個の probe で外延的に比べているだけ。A が無限集合なら、
+// probe の外だけで法則を破るレンズは見逃す。
+//
+// とくに **probe が1個だと set-set 違反は原理的に検出できない**
+// （set-set は2つの異なる値を続けて入れたときの話なので）。
+// TestCoassocCheckMissesViolationsWithOneProbe がそれを実演している。
 func coassocHolds(l Lens[Doc, string], d Doc, probes []string) bool {
 	coalg := LensToCoalgebra(l)
 	st := coalg(d)
@@ -80,7 +87,8 @@ func coassocHolds(l Lens[Doc, string], d Doc, probes []string) bool {
 func TestLawfulLensIsAStoreCoalgebra(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		d := Doc{Title: rapid.String().Draw(t, "title")}
-		probes := rapid.SliceOfN(rapid.String(), 1, 3).Draw(t, "probes")
+		// probe は2つ以上ないと set-set 側を突けない
+		probes := rapid.SliceOfNDistinct(rapid.String(), 2, 4, rapid.ID[string]).Draw(t, "probes")
 		l := titleLens()
 
 		if !counitHolds(l, d) {
@@ -94,23 +102,34 @@ func TestLawfulLensIsAStoreCoalgebra(t *testing.T) {
 
 // set-set を破るレンズは、coassociativity 則も破る。対応が本物であることの裏。
 func TestBrokenSetSetBreaksCoassociativity(t *testing.T) {
-	l := brokenSetSet()
-	d := Doc{Title: "x"}
+	rapid.Check(t, func(t *rapid.T) {
+		l := brokenSetSet()
+		d := Doc{
+			Title: rapid.String().Draw(t, "title"),
+			Tags:  rapid.SliceOfN(rapid.String(), 0, 3).Draw(t, "tags"),
+		}
+		a := rapid.String().Draw(t, "a")
+		b := rapid.String().Draw(t, "b")
 
-	// 破れているのは set-set だけであることを確認する
-	if !eqDoc(l.Set(d, l.Get(d)), d) {
-		t.Fatalf("get-set は保たれているはず")
-	}
-	if l.Get(l.Set(d, "a")) != "a" {
-		t.Fatalf("set-get は保たれているはず")
-	}
-	if eqDoc(l.Set(l.Set(d, "a"), "b"), l.Set(d, "b")) {
-		t.Fatalf("set-set は破れているはず")
-	}
-	if coassocHolds(l, d, []string{"a", "b"}) {
-		t.Fatalf("set-set が破れているのに coassociativity が成り立ってしまった")
-	}
-	t.Logf("set-set 則が破れると coassociativity 則も破れる")
+		// get-set と set-get は、どんな入力でも保たれる
+		if !eqDoc(l.Set(d, l.Get(d)), d) {
+			t.Fatalf("get-set は保たれているはず")
+		}
+		if l.Get(l.Set(d, a)) != a {
+			t.Fatalf("set-get は保たれているはず")
+		}
+
+		// a と b が違い、どちらも元の Title と違うときだけ set-set が破れる
+		if a == b || a == d.Title || b == d.Title {
+			return
+		}
+		if eqDoc(l.Set(l.Set(d, a), b), l.Set(d, b)) {
+			t.Fatalf("set-set は破れているはず")
+		}
+		if coassocHolds(l, d, []string{a, b}) {
+			t.Fatalf("set-set が破れているのに coassociativity が成り立ってしまった")
+		}
+	})
 }
 
 // set-get を破るレンズも同様。
@@ -127,19 +146,52 @@ func TestBrokenSetGetBreaksCoassociativity(t *testing.T) {
 	t.Logf("set-get 則が破れると coassociativity 則も破れる")
 }
 
-// レンズ → 余代数 → レンズ で元に戻る。
+// レンズ → 余代数 → レンズ と、余代数 → レンズ → 余代数 の両方向で戻る。
 func TestLensCoalgebraRoundTrip(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		d := Doc{Title: rapid.String().Draw(t, "title")}
-		v := rapid.String().Draw(t, "v")
+		probes := rapid.SliceOfN(rapid.String(), 1, 4).Draw(t, "probes")
 		l := titleLens()
-		back := CoalgebraToLens(LensToCoalgebra(l))
 
+		// Lens → Coalgebra → Lens
+		back := CoalgebraToLens(LensToCoalgebra(l))
 		if back.Get(d) != l.Get(d) {
 			t.Fatalf("Get が一致しない")
 		}
-		if !eqDoc(back.Set(d, v), l.Set(d, v)) {
-			t.Fatalf("Set が一致しない")
+		for _, v := range probes {
+			if !eqDoc(back.Set(d, v), l.Set(d, v)) {
+				t.Fatalf("Set が一致しない（%q）", v)
+			}
+		}
+
+		// Coalgebra → Lens → Coalgebra。関数を含むので probe で外延的に比べる。
+		coalg := LensToCoalgebra(l)
+		round := LensToCoalgebra(CoalgebraToLens(coalg))
+		if coalg(d).Pos != round(d).Pos {
+			t.Fatalf("Pos が一致しない")
+		}
+		for _, v := range probes {
+			if !eqDoc(coalg(d).Peek(v), round(d).Peek(v)) {
+				t.Fatalf("Peek が一致しない（%q）", v)
+			}
 		}
 	})
+}
+
+// coassocHolds の限界を実演する。probe が1個だと、set-set を破るレンズが通ってしまう。
+// 検査が「反例探し」であって「証明」ではない、ということ。
+func TestCoassocCheckMissesViolationsWithOneProbe(t *testing.T) {
+	l := brokenSetSet()
+	d := Doc{Title: "x"}
+
+	if eqDoc(l.Set(l.Set(d, "a"), "b"), l.Set(d, "b")) {
+		t.Fatalf("set-set は破れているはず")
+	}
+	if !coassocHolds(l, d, []string{"a"}) {
+		t.Fatalf("probe 1個では通ってしまうはず（この検査の限界の実演）")
+	}
+	if coassocHolds(l, d, []string{"a", "b"}) {
+		t.Fatalf("probe 2個なら検出できるはず")
+	}
+	t.Logf("probe 1個では見逃し、2個で検出。coassocHolds は反例探しであって判定器ではない")
 }
