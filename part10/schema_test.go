@@ -1,0 +1,140 @@
+package part10
+
+import (
+	"math/rand/v2"
+	"strings"
+	"testing"
+
+	"pgregory.net/rapid"
+)
+
+// Spivak の例。上司は同じ部署にいる、という制約をパス等式で書く。
+// RDB では外部キーで書けない種類の制約。
+func orgSchema() Schema {
+	return Schema{
+		Objects: []string{"Employee", "Department"},
+		Arrows: map[string]Arrow{
+			"worksIn": {From: "Employee", To: "Department"},
+			"manager": {From: "Employee", To: "Employee"},
+			"head":    {From: "Department", To: "Employee"},
+		},
+		Equations: []Equation{
+			// 上司は同じ部署にいる
+			{From: "Employee", To: "Department", Left: []string{"manager", "worksIn"}, Right: []string{"worksIn"}},
+			// 部署長はその部署に所属する
+			{From: "Department", To: "Department", Left: []string{"head", "worksIn"}, Right: nil},
+		},
+	}
+}
+
+func TestSchemaValidates(t *testing.T) {
+	if err := orgSchema().Validate(); err != nil {
+		t.Fatalf("スキーマが不正: %v", err)
+	}
+}
+
+func TestSchemaRejectsBrokenPaths(t *testing.T) {
+	s := orgSchema()
+	// 繋がらないパスを入れる
+	s.Equations = append(s.Equations, Equation{
+		From: "Employee", To: "Employee", Left: []string{"worksIn", "worksIn"}, Right: nil,
+	})
+	err := s.Validate()
+	if err == nil {
+		t.Fatalf("繋がらないパスを弾けていない")
+	}
+	if !strings.Contains(err.Error(), "繋がっていない") {
+		t.Fatalf("想定と違う理由で落ちた: %v", err)
+	}
+	t.Logf("弾いた: %v", err)
+}
+
+// 等式を満たすインスタンスを作る。部署ごとに1人の長を置き、全員の上司をその長にする。
+func makeValidInstance(nEmp, nDept int) Instance {
+	emp := make([]int, nEmp)
+	for i := range emp {
+		emp[i] = i
+	}
+	dept := make([]int, nDept)
+	for i := range dept {
+		dept[i] = i
+	}
+	worksIn := make(map[int]int, nEmp)
+	manager := make(map[int]int, nEmp)
+	head := make(map[int]int, nDept)
+	for d := 0; d < nDept; d++ {
+		head[d] = d // 部署 d の長は社員 d（社員 d は部署 d にいる）
+	}
+	for e := 0; e < nEmp; e++ {
+		d := e % nDept
+		worksIn[e] = d
+		manager[e] = head[d] // 上司は自分の部署の長
+	}
+	return Instance{
+		Schema: orgSchema(),
+		Rows:   map[string][]int{"Employee": emp, "Department": dept},
+		Maps:   map[string]map[int]int{"worksIn": worksIn, "manager": manager, "head": head},
+	}
+}
+
+func TestValidInstancePassesBothChecks(t *testing.T) {
+	i := makeValidInstance(200, 7)
+	if bad := i.CheckTotality(); len(bad) > 0 {
+		t.Fatalf("全域性が破れた: %v", bad[:min(3, len(bad))])
+	}
+	if bad := i.CheckEquations(); len(bad) > 0 {
+		t.Fatalf("パス等式が破れた: %v", bad[:min(3, len(bad))])
+	}
+}
+
+// 外部キーとしては正しいのに、パス等式を破るデータを作れる。
+// ここが「RDB の制約では書けない」ことの具体例。
+func TestForeignKeysCanBeValidWhileEquationsBreak(t *testing.T) {
+	i := makeValidInstance(20, 3)
+	// 社員1の上司を、別の部署の長に付け替える。外部キーとしては正しい。
+	i.Maps["manager"][1] = i.Maps["head"][(i.Maps["worksIn"][1]+1)%3]
+
+	if bad := i.CheckTotality(); len(bad) > 0 {
+		t.Fatalf("外部キーは正しいはず: %v", bad)
+	}
+	bad := i.CheckEquations()
+	if len(bad) == 0 {
+		t.Fatalf("パス等式が破れるはず")
+	}
+	t.Logf("外部キーは全部正しいのに、パス等式が %d 件破れた。例: %s", len(bad), bad[0])
+}
+
+// 無作為なデータでは、パス等式はほぼ必ず破れる。
+func TestRandomDataAlmostAlwaysBreaksEquations(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		nEmp := rapid.IntRange(3, 20).Draw(t, "nEmp")
+		nDept := rapid.IntRange(2, 5).Draw(t, "nDept")
+		seed := uint64(rapid.IntRange(1, 1000).Draw(t, "seed"))
+		r := rand.New(rand.NewPCG(seed, 99))
+
+		emp := make([]int, nEmp)
+		for i := range emp {
+			emp[i] = i
+		}
+		dept := make([]int, nDept)
+		for i := range dept {
+			dept[i] = i
+		}
+		worksIn, manager, head := map[int]int{}, map[int]int{}, map[int]int{}
+		for e := range emp {
+			worksIn[e] = r.IntN(nDept)
+			manager[e] = r.IntN(nEmp)
+		}
+		for d := range dept {
+			head[d] = r.IntN(nEmp)
+		}
+		i := Instance{Schema: orgSchema(),
+			Rows: map[string][]int{"Employee": emp, "Department": dept},
+			Maps: map[string]map[int]int{"worksIn": worksIn, "manager": manager, "head": head}}
+
+		// 外部キーとしては常に正しい（行き先は必ず実在する）
+		if bad := i.CheckTotality(); len(bad) > 0 {
+			t.Fatalf("全域性は満たすはず: %v", bad)
+		}
+	})
+}
