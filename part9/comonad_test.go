@@ -27,8 +27,23 @@ func eqZ[A comparable](a, b Zipper[A]) bool {
 func TestComonadLaws(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		w := genZipper().Draw(t, "w")
-		f := func(z Zipper[int]) int { return Extract(z) * 2 }
-		g := func(z Zipper[int]) int { return Extract(z) + len(z.Items) }
+		// 焦点だけを見る関数だと、周りの文脈が壊れていても検出できない。
+		// 近傍・長さ・位置を見る関数を使う。
+		f := func(z Zipper[int]) int {
+			lo, hi := max(0, z.Pos-1), min(len(z.Items)-1, z.Pos+1)
+			s := z.Pos * 31
+			for i := lo; i <= hi; i++ {
+				s = s*7 + z.Items[i]
+			}
+			return s
+		}
+		g := func(z Zipper[int]) int {
+			s := len(z.Items)*13 + z.Pos
+			for i, v := range z.Items {
+				s += v * (i + 1)
+			}
+			return s
+		}
 
 		if got := Extend(Extract[int], w); !eqZ(got, w) {
 			t.Fatalf("extend extract = id が破れた: %v vs %v", got, w)
@@ -67,14 +82,36 @@ func TestExtendAgreesWithDuplicateThenMap(t *testing.T) {
 func TestMovingAverageAgreesWithLoop(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		xs := rapid.SliceOfN(rapid.Float64Range(-100, 100), 1, 30).Draw(t, "xs")
-		n := rapid.IntRange(1, 7).Draw(t, "n")
+		half := rapid.IntRange(0, 3).Draw(t, "half")
 
-		viaExtend := Extend(MovingAverage(n), Zipper[float64]{Items: xs, Pos: 0}).Items
-		viaLoop := MovingAverageLoop(xs, n)
+		viaExtend := Extend(MovingAverage(half), Zipper[float64]{Items: xs, Pos: 0}).Items
+		viaLoop := MovingAverageLoop(xs, half)
 		for i := range xs {
 			if math.Abs(viaExtend[i]-viaLoop[i]) > 1e-9 {
 				t.Fatalf("%d 番目が違う: %v vs %v", i, viaExtend[i], viaLoop[i])
 			}
 		}
 	})
+}
+
+// 余モナドとして扱えるのは Valid な Zipper だけ。空だと Extract が定義されない。
+func TestExtractIsUndefinedOnInvalidZipper(t *testing.T) {
+	for _, w := range []Zipper[int]{
+		{Items: nil, Pos: 0},
+		{Items: []int{1}, Pos: 1},
+		{Items: []int{1}, Pos: -1},
+	} {
+		if w.Valid() {
+			t.Fatalf("%v は Valid ではないはず", w)
+		}
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatalf("%v で Extract が panic しなかった", w)
+				}
+			}()
+			_ = Extract(w)
+		}()
+	}
+	t.Logf("Extract は部分関数。余モナドを名乗れるのは Valid な Zipper に限る")
 }
