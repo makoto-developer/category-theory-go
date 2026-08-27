@@ -115,3 +115,75 @@ func BenchmarkFilterPushdown(b *testing.B) {
 		}
 	})
 }
+
+// 余等化子の普遍性。h: R → X が同じキーの行を区別しない（h∘π₁ = h∘π₂）なら、
+// h は商を経由してただ一通りに分解する。
+// 「GROUP BY は余等化子」と言うなら、これが成り立っていないといけない。
+func TestQuotientUniversalProperty(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		rows := genRows().Draw(t, "rows")
+		if len(rows) == 0 {
+			return
+		}
+		// h は「キーだけを見る」関数。これは h∘π₁ = h∘π₂ を満たす。
+		suffix := rapid.String().Draw(t, "suffix")
+		h := func(r Row) string { return r.Key + suffix }
+
+		// 平行2射の条件: 同じキーの2行に h を当てたら同じ値になる
+		for _, r1 := range rows {
+			for _, r2 := range rows {
+				if r1.Key == r2.Key && h(r1) != h(r2) {
+					t.Fatalf("h が平行2射を等化していない")
+				}
+			}
+		}
+
+		// 商を経由する分解 hBar が、ただ一通りに決まる
+		q := Quotient(rows)
+		hBar := make(map[string]string, len(q))
+		for _, k := range q {
+			hBar[k] = k + suffix
+		}
+		for _, r := range rows {
+			if got, ok := hBar[r.Key]; !ok || got != h(r) {
+				t.Fatalf("h = hBar ∘ quotient になっていない: %q vs %q", got, h(r))
+			}
+		}
+		if len(hBar) != len(q) {
+			t.Fatalf("分解が一意でない")
+		}
+	})
+}
+
+// h が同じキーの行を区別するなら、商を経由できない。
+// 余等化子の普遍性が「条件つき」であることの裏。
+func TestQuotientRejectsKeyBlindFunctions(t *testing.T) {
+	rows := []Row{{"a", 1}, {"a", 2}}
+	h := func(r Row) string { return r.Key + strconv.Itoa(r.Value) } // 値まで見てしまう
+	if h(rows[0]) == h(rows[1]) {
+		t.Fatalf("この h は2行を区別するはず")
+	}
+	// 商は "a" の1点しかないので、h の2つの値を分けて表せない
+	if len(Quotient(rows)) != 1 {
+		t.Fatalf("商が1点でなければこの例は成り立たない")
+	}
+	t.Logf("h は同じキーの2行に別の値 (%s, %s) を与えるので、1点の商を経由できない", h(rows[0]), h(rows[1]))
+}
+
+// 「述語が集約に触れていたら押し下げ不可」は言い過ぎ。
+// COUNT(*) > 0 は、存在する群では常に真なので、恒真述語に置き換えて押し下げられる。
+// 判定基準は「集約に触れているか」ではなく「行単位の述語へ持ち上げられるか」。
+func TestSomeAggregatePredicatesAreStillSafe(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		rows := genRows().Draw(t, "rows")
+
+		// HAVING COUNT(*) > 0
+		after := FilterGroups(GroupSum(rows), func(g Group) bool { return g.Count > 0 })
+		// 恒真述語として押し下げる
+		before := GroupSum(FilterRows(rows, func(Row) bool { return true }))
+
+		if !slices.Equal(groupKeys(after), groupKeys(before)) {
+			t.Fatalf("COUNT(*) > 0 は押し下げられるはず:\n後 %v\n前 %v", groupKeys(after), groupKeys(before))
+		}
+	})
+}
