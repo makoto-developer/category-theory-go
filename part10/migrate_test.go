@@ -7,8 +7,9 @@ import (
 	"pgregory.net/rapid"
 )
 
-// Σ ⊣ Δ の随伴。Hom_D(Σ I, J) ≅ Hom_C(I, Δ J) が全単射であること。
+// Σ ⊣ Δ の全単射 Hom_D(Σ I, J) ≅ Hom_C(I, Δ J) を、標本点で往復させて確かめる。
 // 射がないこの場合、これは余積の普遍性そのもの。
+// **全単射だけでは随伴にならない。** 自然性は下の別テストで見る。
 func TestSigmaIsLeftAdjointToDelta(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		nE := rapid.IntRange(0, 8).Draw(t, "nE")
@@ -57,7 +58,8 @@ func TestSigmaIsLeftAdjointToDelta(t *testing.T) {
 	})
 }
 
-// Δ ⊣ Π の随伴。Hom_C(Δ J, I) ≅ Hom_D(J, Π I)。積の普遍性そのもの。
+// Δ ⊣ Π の全単射 Hom_C(Δ J, I) ≅ Hom_D(J, Π I)。積の普遍性そのもの。
+// こちらも自然性は別テスト。
 func TestDeltaIsLeftAdjointToPi(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(0, 8).Draw(t, "n")
@@ -166,4 +168,60 @@ func BenchmarkCheckEquations(b *testing.B) {
 			}
 		})
 	}
+}
+
+// 随伴は「自然な全単射」なので、全単射だけでは足りない。
+// Σ ⊣ Δ の J についての自然性: k: J → J' に対して
+// Φ(k ∘ g) = (k ∘ −) ∘ Φ(g) が成り立つこと。
+func TestSigmaDeltaBijectionIsNaturalInJ(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(1, 8).Draw(t, "n")
+		a := rapid.IntRange(1, 7).Draw(t, "a")
+		b := rapid.IntRange(0, 7).Draw(t, "b")
+		g := func(tg Tagged) int {
+			if tg.FromEmployee {
+				return tg.ID * 3
+			}
+			return tg.ID*5 + 1
+		}
+		k := func(x int) int { return x*a + b } // J → J'
+
+		// 左: k ∘ g を分解する
+		lE, lC := SigmaAdjunctRight(func(tg Tagged) int { return k(g(tg)) })
+		// 右: g を分解してから各成分に k を後合成する
+		gE, gC := SigmaAdjunctRight(g)
+		rE := func(id int) int { return k(gE(id)) }
+		rC := func(id int) int { return k(gC(id)) }
+
+		for id := 0; id < n; id++ {
+			if lE(id) != rE(id) || lC(id) != rC(id) {
+				t.Fatalf("J についての自然性が破れた: id=%d", id)
+			}
+		}
+	})
+}
+
+// Δ ⊣ Π の I についての自然性: m: I → I' に対して
+// Ψ(m ∘ h) = (m を成分ごとに適用) ∘ Ψ(h)。
+func TestDeltaPiBijectionIsNaturalInI(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(1, 8).Draw(t, "n")
+		a := rapid.IntRange(1, 7).Draw(t, "a")
+		b := rapid.IntRange(0, 7).Draw(t, "b")
+		toE := func(id int) int { return id*2 + 1 }
+		toC := func(id int) int { return id*3 + 2 }
+		m := func(x int) int { return x*a + b } // I → I'
+
+		// 左: 先に m を後合成してから組にする
+		left := PiAdjunctLeft(func(id int) int { return m(toE(id)) }, func(id int) int { return m(toC(id)) })
+		// 右: 組にしてから m を成分ごとに適用する
+		h := PiAdjunctLeft(toE, toC)
+		right := func(id int) MigPair { p := h(id); return MigPair{E: m(p.E), C: m(p.C)} }
+
+		for id := 0; id < n; id++ {
+			if left(id) != right(id) {
+				t.Fatalf("I についての自然性が破れた: id=%d", id)
+			}
+		}
+	})
 }

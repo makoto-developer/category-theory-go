@@ -120,6 +120,10 @@ $$\mathrm{Hom}_D(\Sigma I, J) \cong \mathrm{Hom}_C(I, \Delta J), \qquad \mathrm{
 
 `TestSigmaIsLeftAdjointToDelta` と `TestDeltaIsLeftAdjointToPi` が、この全単射を両方向で確かめます。
 
+**ただし全単射だけでは随伴になりません。** 随伴は「**自然な**全単射」なので、自然性の可換図式も要ります。`TestSigmaDeltaBijectionIsNaturalInJ` と `TestDeltaPiBijectionIsNaturalInI` がそれを見ています。
+
+そのうえで、これらは**標本点での確認**です。有限個の一次関数を振っているだけで、任意の写像を網羅してはいません。余積・積の標準的な随伴であること自体は数学的に示せるので、テストはその写し間違いを拾う道具だと思ってください。
+
 ## ファイルの地図
 
 | ファイル | 中身 |
