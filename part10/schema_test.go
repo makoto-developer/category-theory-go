@@ -4,8 +4,6 @@ import (
 	"math/rand/v2"
 	"strings"
 	"testing"
-
-	"pgregory.net/rapid"
 )
 
 // Spivak の例。上司は同じ部署にいる、という制約をパス等式で書く。
@@ -104,13 +102,14 @@ func TestForeignKeysCanBeValidWhileEquationsBreak(t *testing.T) {
 	t.Logf("外部キーは全部正しいのに、パス等式が %d 件破れた。例: %s", len(bad), bad[0])
 }
 
-// 無作為なデータでは、パス等式はほぼ必ず破れる。
-func TestRandomDataAlmostAlwaysBreaksEquations(t *testing.T) {
-	rapid.Check(t, func(t *rapid.T) {
-		nEmp := rapid.IntRange(3, 20).Draw(t, "nEmp")
-		nDept := rapid.IntRange(2, 5).Draw(t, "nDept")
-		seed := uint64(rapid.IntRange(1, 1000).Draw(t, "seed"))
-		r := rand.New(rand.NewPCG(seed, 99))
+// 無作為なデータでは、外部キーとしては常に正しいのにパス等式は高い割合で破れる。
+// 「ほぼ必ず」は確率的な主張なので、件数を数えて割合で述べる。
+func TestRandomDataKeepsForeignKeysButBreaksEquations(t *testing.T) {
+	const trials = 500
+	broken := 0
+	for seed := 1; seed <= trials; seed++ {
+		r := rand.New(rand.NewPCG(uint64(seed), 99))
+		nEmp, nDept := 3+r.IntN(18), 2+r.IntN(4)
 
 		emp := make([]int, nEmp)
 		for i := range emp {
@@ -134,7 +133,29 @@ func TestRandomDataAlmostAlwaysBreaksEquations(t *testing.T) {
 
 		// 外部キーとしては常に正しい（行き先は必ず実在する）
 		if bad := i.CheckTotality(); len(bad) > 0 {
-			t.Fatalf("全域性は満たすはず: %v", bad)
+			t.Fatalf("seed %d: 全域性は満たすはず: %v", seed, bad)
 		}
-	})
+		if len(i.CheckEquations()) > 0 {
+			broken++
+		}
+	}
+	t.Logf("外部キーは %d/%d 件すべて正しく、パス等式は %d/%d 件で破れた（%.1f%%）",
+		trials, trials, broken, trials, float64(broken)/trials*100)
+	if broken < trials*8/10 {
+		t.Fatalf("この分布なら大半で破れるはず: %d/%d", broken, trials)
+	}
+}
+
+// 索引を作り直さない全域性検査は、作り直す版と同じ答えを返す。
+func TestTotalityWithIndexAgrees(t *testing.T) {
+	i := makeValidInstance(500, 11)
+	idx := i.BuildIndex()
+	if a, b := len(i.CheckTotality()), len(i.CheckTotalityWithIndex(idx)); a != b {
+		t.Fatalf("件数が違う: %d vs %d", a, b)
+	}
+	// 壊してからも一致すること
+	i.Maps["worksIn"][0] = 9999
+	if a, b := len(i.CheckTotality()), len(i.CheckTotalityWithIndex(i.BuildIndex())); a != b || a == 0 {
+		t.Fatalf("壊した状態で一致しない: %d vs %d", a, b)
+	}
 }

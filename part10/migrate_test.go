@@ -151,7 +151,15 @@ func BenchmarkCheckEquations(b *testing.B) {
 				sinkBad = inst.CheckTotality()
 			}
 		})
-		b.Run(fmt.Sprintf("n=%06d/2_equations", n), func(b *testing.B) {
+		b.Run(fmt.Sprintf("n=%06d/2_totality_prebuilt_index", n), func(b *testing.B) {
+			idx := inst.BuildIndex()
+			b.ResetTimer()
+			b.ReportAllocs()
+			for b.Loop() {
+				sinkBad = inst.CheckTotalityWithIndex(idx)
+			}
+		})
+		b.Run(fmt.Sprintf("n=%06d/3_equations", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
 				sinkBad = inst.CheckEquations()
