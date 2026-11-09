@@ -62,7 +62,7 @@ func callExternal(name string) Step {
 	}
 }
 
-// これがワークフローの全定義。8行しかない。
+// これがワークフローの全定義。中身は8行（関数の宣言まで含めると11行）。
 func orderPlan() Plan {
 	return Plan{
 		Title: "注文処理",
@@ -214,6 +214,6 @@ func (p Plan) Mermaid() string {
 }
 
 func showMermaid(p Plan) {
-	fmt.Println("\n[Mermaid] この図は上の8行の定義から生成しています。ステップを足せば図に出ます")
+	fmt.Println("\n[Mermaid] この図は上の定義から生成しています。ステップを足せば図に出ます")
 	fmt.Print(p.Mermaid())
 }

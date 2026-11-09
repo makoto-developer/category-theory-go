@@ -9,7 +9,7 @@ import (
 )
 
 // Endo は State から State への射。すべてのステップがこの形をしているので、
-// 全体が自己射のモノイドになり、リストに並べて畳み込める。
+// 同じ型のままリストに並べて畳み込める。
 type Endo func(context.Context, State) (State, error)
 
 // Recorder は各ステップの所要時間を集める。並行に書かれるのでロックする。
@@ -35,7 +35,7 @@ func (r *Recorder) Record(name string, d time.Duration) {
 // Identity は何もしない射。空のワークフローがこれになる。
 func Identity(_ context.Context, s State) (State, error) { return s, nil }
 
-// Then は射を合成する。context のキャンセルは合成器の側で一度だけ見る。
+// Then は射を合成する。キャンセルは f を呼ぶ前に一度だけ確かめ、g の前では見ない。
 func Then(f, g Endo) Endo {
 	return func(ctx context.Context, s State) (State, error) {
 		if err := ctx.Err(); err != nil {

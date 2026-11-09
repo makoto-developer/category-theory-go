@@ -46,7 +46,7 @@ go test -v -run 'TestFoldInterpretsSameTreeDifferently|TestSimplifyAlgebra' ./pa
 
 同じ式木に代数を差し替えるだけで、評価・整形・変数収集・深さ・節点数・簡約が全部書けます。**再帰は `Fold` の中の1か所にしかありません**。
 
-構成子を足すと `Algebra` にフィールドが増え、**既存の代数がすべてコンパイルエラーになります**。`switch` の網羅性が検査されない問題が、ここでは構造体のフィールドとして解決しています。
+構成子を足すときは、`Fold` と `Algebra` の定義に加えて、**各代数にも新しい構成子の解釈を足す必要があります**。代数はキー付きの struct literal で書いているので、足し忘れてもコンパイルは通り、新しい構成子を含む式を畳み込んだときに nil の関数を呼んで落ちます。`switch` の網羅性が検査されない問題は、形を変えて残っています。
 
 ```bash
 go test -v -run TestSimplifyPreservesMeaning ./part3/
@@ -113,7 +113,7 @@ go test -v -run 'TestOptionsAreMonoid|TestCurryOptionMatchesDirectSetter|TestOpt
 
 `WithHost(h)` は `func(Config, string) Config` をカリー化したものです。カリー化の結果 `ServerOption` は自己射になり、その全体がモノイドになります。だから `ApplyOptions` でまとめられます。
 
-middleware・Functional Option・比較関数が、すべて**同じ「自己射のモノイド」**だと分かるのがこの節の狙いです。
+middleware・Functional Option・比較関数が、どれも**モノイド**という同じ構造だと分かるのがこの節の狙いです。ただし自己射を合成しているのは middleware と Functional Option だけで、比較関数（`T` × `T` → `int`）は始点と終点が違うので自己射ではありません。
 
 ## ファイルの地図
 

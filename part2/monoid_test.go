@@ -114,7 +114,7 @@ func TestMeanBreaksUnderParallelSplit(t *testing.T) {
 	t.Logf("逐次=%v / 3分割=%v （差=%v）", sequential, parallel, math.Abs(sequential-parallel))
 }
 
-// 合計と個数に分ければ両方とも結合的になり、並列化しても答えが合う。
+// 合計と個数に分けて並列に畳み、逐次の結果との差が 1e-9 以内かを確かめる（float64 なので一致までは求めない）。
 func TestSumCountMonoidFixesParallelMean(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		xs := rapid.SliceOfN(rapid.Float64Range(-1e6, 1e6), 1, 200).Draw(t, "xs")

@@ -32,7 +32,7 @@ go test ./...                            # 圏の法則・Functor則・Monoid則
 go test -bench=. -benchmem -run='^$' ./...   # 実測（結果は BENCHMARKS.md）
 ```
 
-Go 1.25 以降が必要です（`iter.Seq` と range-over-func を使うため）。外部依存は property-based test 用の [rapid](https://pgregory.net/rapid) だけです。
+Go 1.27 以降が必要です（go.mod の `go 1.27`。`iter.Seq` と range-over-func も使います）。外部依存は property-based test 用の [rapid](https://pgregory.net/rapid) だけです。
 
 ## 構成
 
