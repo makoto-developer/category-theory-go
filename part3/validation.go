@@ -52,7 +52,7 @@ func Combine3[A, B, C, D any](a Validated[A], b Validated[B], c Validated[C], f 
 }
 
 // AndThen は Monad の bind。後段が前段の値に依存できる代わりに、
-// 前段が失敗した時点で後段は走らないため、失敗はひとつしか集まらない。
+// 前段が失敗した時点で後段は走らないため、最初に失敗した段の失敗しか集まらない。
 func AndThen[A, B any](v Validated[A], f func(A) Validated[B]) Validated[B] {
 	if !v.OK() {
 		return Validated[B]{Errors: v.Errors}
