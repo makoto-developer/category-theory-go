@@ -40,7 +40,7 @@ func Combine2[A, B, C any](a Validated[A], b Validated[B], f func(A, B) C) Valid
 	return Valid(f(a.Value, b.Value))
 }
 
-// Combine3 は3つ版。Go には可変長の型パラメータが無いので、数だけ書くことになる。
+// Combine3 は3つ版。Go には可変長の型パラメータが無いので、一度に受け取る数ごとに書くことになる。
 func Combine3[A, B, C, D any](a Validated[A], b Validated[B], c Validated[C], f func(A, B, C) D) Validated[D] {
 	if !a.OK() || !b.OK() || !c.OK() {
 		errs := append([]error{}, a.Errors...)
@@ -52,7 +52,7 @@ func Combine3[A, B, C, D any](a Validated[A], b Validated[B], c Validated[C], f 
 }
 
 // AndThen は Monad の bind。後段が前段の値に依存できる代わりに、
-// 前段が失敗した時点で後段は走らないため、失敗はひとつしか集まらない。
+// 前段が失敗した時点で後段は走らないため、最初に失敗した段の失敗しか集まらない。
 func AndThen[A, B any](v Validated[A], f func(A) Validated[B]) Validated[B] {
 	if !v.OK() {
 		return Validated[B]{Errors: v.Errors}

@@ -12,7 +12,7 @@ var (
 	sinkFunc   func(int) bool
 )
 
-// 何も抽象化しない素の呼び出し。コンパイラがインライン化できる形。
+// 何も抽象化しない直接呼び出し。b.Loop の中でインライン化されるかは Go の版による（BENCHMARKS.md）。
 func BenchmarkDirectCall(b *testing.B) {
 	for b.Loop() {
 		sinkBool = isEvenFn(lengthFn(itoaFn(benchInput)))

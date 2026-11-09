@@ -52,7 +52,7 @@ func TestSimplifyAlgebra(t *testing.T) {
 	}
 }
 
-// 簡約しても評価結果は変わらない（意味を保つ変換になっている）。
+// 生成した範囲の式では、簡約しても評価結果は変わらない。
 func TestSimplifyPreservesMeaning(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		e := genExpr(t, 4)

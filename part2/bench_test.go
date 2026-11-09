@@ -23,8 +23,8 @@ func intsOf(n int) []int {
 	return xs
 }
 
-// Functor 則2（合成の保存）が保証しているのは、この2つが同じ結果になることである。
-// 同じ結果になるなら、速いほうを選んでよい。
+// f と g が純粋なら、Functor 則2（合成の保存）によってこの2つは同じ結果になる。
+// 同じ結果になるなら、速いほうを選んでよい（副作用があると呼ばれる順番が変わる）。
 func BenchmarkMapTwice(b *testing.B) {
 	for _, n := range []int{100, 10_000, 1_000_000} {
 		xs := intsOf(n)
