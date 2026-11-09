@@ -5,7 +5,7 @@ package part3
 
 import "errors"
 
-// Validated は「値、または失敗の集まり」。失敗を蓄積できるのが (T, error) との違い。
+// Validated は「値、または失敗の集まり」。失敗を一覧のまま持ち、検証結果どうしを合わせられる。
 type Validated[T any] struct {
 	Value  T
 	Errors []error

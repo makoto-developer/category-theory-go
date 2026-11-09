@@ -29,7 +29,7 @@ func KleisliIdentity[A any](a A) (A, error) { return a, nil }
 // Step は context を取る Kleisli 射。実務のパイプラインはたいていこの形になる。
 type Step[A, B any] func(context.Context, A) (B, error)
 
-// ChainStep は Step の合成。context のキャンセルを各段で確認する。
+// ChainStep は Step の合成。f を呼ぶ前に context のキャンセルを確認する。
 func ChainStep[A, B, C any](f Step[A, B], g Step[B, C]) Step[A, C] {
 	return func(ctx context.Context, a A) (C, error) {
 		var zero C

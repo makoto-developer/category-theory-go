@@ -2,8 +2,7 @@ package part2
 
 import "net/http"
 
-// Middleware は Handler を Handler に写す。対象も射も Handler の世界に閉じているので、
-// 圏から自分自身への関手（エンドファンクタ）にあたる。
+// Middleware は Handler を Handler に写す。出発点と行き先が同じ対象なので、自己射にあたる。
 type Middleware func(http.Handler) http.Handler
 
 // Chain は middleware を左から順に適用する。ms[0] が最も外側になる。

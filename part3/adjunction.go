@@ -50,7 +50,7 @@ func SetHost(c ServerConfig, h string) ServerConfig { c.Host = h; return c }
 
 // CurryOption は SetHost のような2引数の設定関数を ServerOption に変える。
 // func(Config, A) Config ≅ func(A) func(Config) Config という同型が
-// Functional Option パターンの正体である（積と冪の随伴）。
+// Functional Option パターンを支えている同型である（積と冪の随伴）。
 func CurryOption[A any](f func(ServerConfig, A) ServerConfig) func(A) ServerOption {
 	return func(a A) ServerOption {
 		return func(c ServerConfig) ServerConfig { return f(c, a) }

@@ -64,10 +64,10 @@ var (
 	// ConcatString は連結と空文字列。strings.Builder が速いのは、この構造を使い回すため。
 	ConcatString = Monoid[string]{Empty: "", Append: func(a, b string) string { return a + b }}
 
-	// JoinErrors は errors.Join と nil。nil が単位元として振る舞う。
+	// JoinErrors は errors.Join と nil。単位元は == ではなく、観測的等価性（テストの eqError）のもとで成り立つ。
 	JoinErrors = Monoid[error]{Empty: nil, Append: func(a, b error) error { return errors.Join(a, b) }}
 
-	// MaxDuration は最大値と 0。SLO 集計でよく使う形。
+	// MaxDuration は最大値と 0。単位元 0 が効くのは duration >= 0 に限る（SLO 集計を想定）。
 	MaxDuration = Monoid[time.Duration]{Empty: 0, Append: func(a, b time.Duration) time.Duration { return max(a, b) }}
 
 	// BuildString は strings.Builder を経由する連結。文字列結合と同じ答えを返す。
@@ -134,13 +134,13 @@ func MeanParallel(xs []float64, workers int) float64 {
 	return Mean(partials)
 }
 
-// SumCount は「合計と個数」の組。平均をモノイドで扱うための正しい形。
+// SumCount は「合計と個数」の組。平均をモノイドとして畳み込むための形。ただし Sum が float64 なので、結合律は丸め誤差の範囲でしか成り立たない。
 type SumCount struct {
 	Sum   float64
 	Count int
 }
 
-// MeanMonoid は合計と個数を別々に畳み込む。両方とも結合的なので分割して並列化できる。
+// MeanMonoid は合計と個数を別々に畳み込む。部分平均どうしを平均するずれは消えるが、Sum が float64 なので丸め誤差は残る。
 var MeanMonoid = Monoid[SumCount]{
 	Empty: SumCount{},
 	Append: func(a, b SumCount) SumCount {

@@ -102,7 +102,7 @@ func showApplicativeVsMonad() {
 
 // ---- F代数 -------------------------------------------------------------
 
-// Expr は式木。構成子は3つだけ。
+// Expr は式木。構成子は num・var・add・mul の4つ。
 type Expr struct {
 	Kind string // "num" | "var" | "add" | "mul"
 	Num  int
@@ -160,8 +160,8 @@ func showOneFoldManyMeanings() {
 	fmt.Printf("\n[F代数] 整形 = %s\n", Fold(tree, pretty))
 	fmt.Printf("        評価 = %d （x=5）\n", Fold(tree, eval))
 	fmt.Printf("        変数 = %v\n", Fold(tree, vars))
-	fmt.Println("        再帰は Fold の中の1か所だけ。構成子を足すと既存の代数が全部コンパイルエラーになる")
-	fmt.Println("        （switch の網羅性が検査されない問題が、構造体のフィールドとして解決している）")
+	fmt.Println("        再帰は Fold の中の1か所だけ。構成子を足すときは、各代数にも解釈を足す必要がある")
+	fmt.Println("        （足し忘れてもコンパイルは通る。switch の網羅性が検査されない問題は、形を変えて残っている）")
 }
 
 func num(n int) *Expr         { return &Expr{Kind: "num", Num: n} }

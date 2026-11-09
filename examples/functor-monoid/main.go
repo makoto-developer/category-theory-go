@@ -95,7 +95,8 @@ func allocatedBytes(f func()) uint64 {
 
 // ---- モノイド ----------------------------------------------------------
 
-// 合計は結合的（(a+b)+c == a+(b+c)）なので、どこで区切って並列化しても答えが変わらない。
+// ここで足すのは 0〜99 の整数なので、float64 でも途中の和に丸めが起きず、どこで区切って並列化しても答えが変わらない。
+// 一般の float64 の和は、丸めがあるので厳密には結合的でない。
 func showParallelSumWorks() {
 	xs := randomFloats(10000)
 
@@ -104,13 +105,13 @@ func showParallelSumWorks() {
 }
 
 // 平均は結合的でない = モノイドでない。だから分割すると答えが変わる。
-// 「合計と個数」に分ければ両方とも結合的になり、並列化しても一致する。
+// 「合計と個数」に分ければ部分平均どうしを平均するずれは消えるが、合計が float64 なので丸め誤差は残る。
 func showParallelMeanBreaks() {
 	xs := []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 	fmt.Printf("\n[平均] 逐次=%.4f / 3分割して部分平均の平均=%.4f （ずれた）\n", mean(xs), meanInParallel(xs, 3))
 	fmt.Printf("       合計と個数に分けてから並列化すると=%.4f （直った）\n", meanViaSumCount(xs, 3))
-	fmt.Println("       MapReduce で「合計と件数」を持ち回るのは、平均をモノイドにするための変形だった")
+	fmt.Println("       MapReduce で「合計と件数」を持ち回るのは、平均をモノイドにするための変形だった（実数なら厳密。float64 では丸めの分だけずれうる）")
 }
 
 func sum(xs []float64) float64 {
@@ -169,7 +170,7 @@ func meanInParallel(xs []float64, workers int) float64 {
 	return mean(partials)
 }
 
-// 合計と個数はどちらも結合的なので、分割しても答えが変わらない。
+// 合計と個数を別々に畳み込む。部分平均どうしを平均するずれは消えるが、合計が float64 なので丸め誤差は残る。
 func meanViaSumCount(xs []float64, workers int) float64 {
 	type sumCount struct {
 		sum   float64

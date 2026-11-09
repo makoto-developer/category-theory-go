@@ -59,7 +59,7 @@ func TestPanicTraceShape(t *testing.T) {
 	t.Logf("素直な実装:\n%s", part4Frames(naiveTrace))
 	t.Logf("合成版:\n%s", part4Frames(composedTrace))
 
-	// 合成版のほうがフレームが深くなる。これが読みにくさの正体。
+	// 合成版のほうがフレームが深くなる。これが読みにくさの主因。
 	if part4FrameCount(composedTrace) <= part4FrameCount(naiveTrace) {
 		t.Fatalf("合成版のフレームが増えていない: naive=%d, composed=%d",
 			part4FrameCount(naiveTrace), part4FrameCount(composedTrace))

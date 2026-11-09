@@ -29,7 +29,7 @@ go test -v -run TestNaiveAndComposedAgree ./part4/
 go test -v -run 'TestDryRunTouchesNothing|TestMermaidIsGeneratedFromTheSamePlan|TestExplainListsRetryPolicy' ./part4/
 ```
 
-`OrderPlan` という**8行の定義**から、実行・dry-run・Mermaid図・設定一覧の4つが導けます。ログに図がそのまま出ます。
+`OrderPlan` という定義（中身は**8行**、関数の宣言まで含めると11行）から、実行・dry-run・Mermaid図・設定一覧の4つが導けます。ログに図がそのまま出ます。
 
 ```
 flowchart TD
