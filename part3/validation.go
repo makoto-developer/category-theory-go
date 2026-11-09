@@ -40,7 +40,7 @@ func Combine2[A, B, C any](a Validated[A], b Validated[B], f func(A, B) C) Valid
 	return Valid(f(a.Value, b.Value))
 }
 
-// Combine3 は3つ版。Go には可変長の型パラメータが無いので、数だけ書くことになる。
+// Combine3 は3つを一度に受け取る版。可変長の型パラメータが無いので、一度に受け取るなら個数ごとに書く（Combine2 の入れ子でも合わせられる）。
 func Combine3[A, B, C, D any](a Validated[A], b Validated[B], c Validated[C], f func(A, B, C) D) Validated[D] {
 	if !a.OK() || !b.OK() || !c.OK() {
 		errs := append([]error{}, a.Errors...)
