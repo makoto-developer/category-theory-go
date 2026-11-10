@@ -2,6 +2,7 @@ package part1
 
 import (
 	"errors"
+	"math"
 	"strconv"
 	"testing"
 
@@ -53,19 +54,44 @@ func TestComposeEIsAssociative(t *testing.T) {
 	})
 }
 
+// 単位律は「エラーのときは一緒に返った値を見ない」取り決めで比べる。ComposeE は前段のエラーで値をゼロ値にするため。
+func sameResult[T comparable](got T, err error, want T, wantErr error) bool {
+	if !sameError(err, wantErr) {
+		return false
+	}
+	return wantErr != nil || got == want
+}
+
 func TestIdentityEIsUnit(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		s := rapid.String().Draw(t, "s")
 
 		want, wantErr := parseInt(s)
 
-		if got, err := ComposeE(IdentityE[string], parseInt)(s); got != want || !sameError(err, wantErr) {
+		if got, err := ComposeE(IdentityE[string], parseInt)(s); !sameResult(got, err, want, wantErr) {
 			t.Fatalf("左単位律が破れた: s=%q, got=(%d,%v), want=(%d,%v)", s, got, err, want, wantErr)
 		}
-		if got, err := ComposeE(parseInt, IdentityE[int])(s); got != want || !sameError(err, wantErr) {
+		if got, err := ComposeE(parseInt, IdentityE[int])(s); !sameResult(got, err, want, wantErr) {
 			t.Fatalf("右単位律が破れた: s=%q, got=(%d,%v), want=(%d,%v)", s, got, err, want, wantErr)
 		}
 	})
+}
+
+// strconv.Atoi は範囲外の入力に、エラーと一緒に最大値を返す。値まで比べると単位律が破れて見える例。
+func TestIdentityEIsUnitWhenErrorCarriesValue(t *testing.T) {
+	s := "9223372036854775808"
+	want, wantErr := parseInt(s)
+	if !errors.Is(wantErr, strconv.ErrRange) || want != math.MaxInt {
+		t.Fatalf("前提が崩れた: Atoi(%q)=(%d,%v)。範囲外のエラーと最大値が返るはず", s, want, wantErr)
+	}
+
+	got, err := ComposeE(parseInt, IdentityE[int])(s)
+	if got != 0 {
+		t.Fatalf("前段のエラーで値がゼロ値になっていない: got=%d", got)
+	}
+	if !sameResult(got, err, want, wantErr) {
+		t.Fatalf("右単位律が破れた: got=(%d,%v), want=(%d,%v)", got, err, want, wantErr)
+	}
 }
 
 // エラーが出た時点で後続の射は呼ばれない。if err != nil { return } を合成器に閉じ込めた効果。
